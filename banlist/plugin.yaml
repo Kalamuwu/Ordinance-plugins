@@ -1,0 +1,23 @@
+# 
+# Banlist -- Continuously updates and maintains list(s) of known malicious IP
+# addresses, and blacklists them.
+# 
+
+---
+
+name: Banlist Maintainer
+description: Updates and maintains foreign list(s) of known bad addresses.
+author: Kalamuwu
+version: 1.0.0
+
+qualified_name: banlist
+entry_file: banlist
+
+default_config:
+  auto_update_every_24hrs: true
+  fetch_on_startup: true
+  sources:
+    - https://www.binarydefense.com/banlist.txt
+    - http://rules.emergingthreats.net/blockrules/compromised-ips.txt
+    - https://feodotracker.abuse.ch/downloads/ipblocklist_recommended.txt
+    - https://reputation.alienvault.com/reputation.unix

@@ -1,0 +1,13 @@
+{
+    "/etc/ssh/sshd_config": {
+        "RootLogin yes": "SSHD config allows RootLogin. An attacker can gain root access to the system if password is guessed. Recommendation: Change 'RootLogin yes' to 'RootLogin no'",
+        "Port 22": "SSHD is running on the default port 22. An attacker commonly scans for these type of ports. Recommendation: Change the port to something high that doesn't get picked up by typical port scanners.",
+        "PasswordAuthentification yes": "Password authentification enabled. An attacker may be able to brute force weak passwords.",
+        "Protocol 1": "SSH Protocol 1 enabled which is potentially vulnerable to MiTM attacks. https://www.kb.cert.org/vuls/id/684820",
+        "Protocol 2,1": "SSH Protocol 1 enabled which is potentially vulnerable to MiTM attacks. https://www.kb.cert.org/vuls/id/684820"
+    },
+
+    "/etc/vsftpd.conf": {
+        "anonymous_enable=YES": "/etc/vsftpd.conf allows Anonymous login. An attacker can gain a foothold to the system with absolutely zero effort. Recommendation: Change anonymous_enable yes to anonymous_enable no"
+    }
+}

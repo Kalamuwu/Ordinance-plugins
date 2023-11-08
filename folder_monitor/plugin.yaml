@@ -1,0 +1,19 @@
+# 
+# File monitor plugin -- watches filesystem at requested places, and alerts The
+# Great User of any changes.
+# 
+
+---
+
+name: File Monitor
+description: Monitors filesystem for changes and sends an alert if changes are detected.
+author: Kalamuwu
+version: 1.0.0
+
+qualified_name: folder_monitor
+entry_file: monitor
+
+default_config:
+  paths: []
+  exclude: []
+  frequency_min: 60

@@ -1,0 +1,18 @@
+# 
+# Weak config scanner -- Scans configuration files for a few different known
+# and/or popular programs, services, and daemons, and warns The Almighty User
+# about such weaknesses.
+# 
+
+---
+
+name: Weak Config Scanner
+description: Scans various configuration files for known weaknesses.
+author: Kalamuwu
+version: 1.0.0
+
+qualified_name: weak_config_scanning
+entry_file: harden
+
+default_config:
+  scan_every_days: 7

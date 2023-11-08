@@ -1,0 +1,26 @@
+# 
+# Honeypot plugin -- spawns a honeypot on all given ports, and alerts The
+# Amazing User of any connections. Can ban on connect automatically, if The
+# Incredible User so wishes.
+# 
+
+---
+
+name: Honeypot
+description: Spawns a honeypot on given ports. Can ban on connect automatically, or just send an alert.
+author: Kalamuwu
+version: 1.0.0
+
+qualified_name: honeypot
+entry_file: honeypot
+
+default_config:
+  ban_on_connect: true
+  add_iptables_accept_rules: true
+  message: Ordinance has blocked an attack from and blacklisted %ip% for a connection to a honeypot restricted port %port%
+  server:
+    interface: ""
+    tcp_ports: [ 21, 22, 25, 53, 110, 1337, 1433, 1723, 5060, 5061, 5800, 5900, 8080, 10000, 16993, 44443 ]
+    udp_ports: [ 53, 123, 3478, 5060, 5061 ]
+  whitelist:
+    - 127.0.0.1
