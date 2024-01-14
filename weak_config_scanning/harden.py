@@ -1,13 +1,12 @@
 import os
 import json
 import datetime
-import asyncio
 
 from typing import List, Dict, Set, Any
 
 import ordinance
 
-class SysHardenerPlugin(ordinance.ext.plugin.OrdinancePlugin):
+class SysHardenerPlugin(ordinance.plugin.OrdinancePlugin):
     """ Scans the system for weak configs. """
 
     def __init__(self, config: Dict[str, Any]):
@@ -19,12 +18,12 @@ class SysHardenerPlugin(ordinance.ext.plugin.OrdinancePlugin):
         self.scans = None
         ordinance.writer.info("SysHardener: Initialized.")
     
-    @ordinance.ext.schedule.run_at_startup()
+    @ordinance.schedule.run_at_startup()
     def set_scan_rate(self):
-        sched = ordinance.ext.schedule.get_coro(self.scan_configs)
+        sched = ordinance.schedule.get_coro(self.scan_configs)
         sched.set_time_between( datetime.timedelta(days=self.scan_days) )
     
-    @ordinance.ext.schedule.run_at_startup()
+    @ordinance.schedule.run_at_startup()
     def read_scans(self):
         if not os.path.isfile(self.configscans):
             with open(self.configscans, 'w') as file:
@@ -36,10 +35,10 @@ class SysHardenerPlugin(ordinance.ext.plugin.OrdinancePlugin):
             ordinance.writer.error("SysHardener: Could not load scans db")
             with open(self.configscans, 'w') as file:
                 file.write("{}")
-        sched = ordinance.ext.schedule.get_coro(self.scan_configs)
+        sched = ordinance.schedule.get_coro(self.scan_configs)
         sched.run()
     
-    @ordinance.ext.schedule.run_periodically(days=7)
+    @ordinance.schedule.run_periodically(days=7)
     def scan_configs(self):
         ordinance.writer.info("SysHardener: Starting system config scan...")
         num_issues = 0

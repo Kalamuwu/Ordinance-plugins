@@ -1,4 +1,3 @@
-import asyncio
 import time
 import socketserver
 import threading
@@ -38,8 +37,8 @@ class SocketListener(socketserver.BaseRequestHandler):
             try:    self.request.close()
             except: pass
 
-            if ordinance.ext.network.is_valid_ipv4(ip):
-                if ordinance.ext.network.is_whitelisted(ip):
+            if ordinance.network.is_valid_ipv4(ip):
+                if ip in ordinance.network.whitelist:
                     ordinance.writer.info(f"Honeypot: Ignoring connection from {ip} to port {port}, whitelisted")
                 else:
                     # alert of and ban foreign connection
@@ -65,17 +64,20 @@ class ServerThread(threading.Thread):
     def bind(self):
         # open table
         if self.__autoaccept:
-            ordinance.ext.network.create_iptables_input_accept(self.__con_type, self.__port)
+            ordinance.network.create_iptables_rule(
+                rule_type='ACCEPT',
+                port_type=self.__con_type,
+                port=self.__port)
         # bind server
         self.server = None
         num_attempts = 0
         while num_attempts < 5 and self.server is None:
             try:
                 num_attempts += 1
-                if self.__con_type == "tcp":
+                if self.__con_type == 'tcp':
                     self.server = socketserver.ThreadingTCPServer(
                         (self.__interface, self.__port), SocketListener)
-                else: # __con_type == "udp"
+                else: # __con_type == 'udp'
                     self.server = socketserver.ThreadingUDPServer(
                         (self.__interface, self.__port), SocketListener)
             except Exception as e:
@@ -88,9 +90,15 @@ class ServerThread(threading.Thread):
             ordinance.writer.error(f"Honeypot: Could not bind to {self.__con_type} port {self.__port}{i}")
         else:
             self.server.serve_forever(2)
+            # shutdown() called, since serve_forever() returned. close ports
+            if self.__autoaccept:
+                ordinance.network.delete_iptables_rule(
+                    rule_type='ACCEPT',
+                    port_type=self.__con_type,
+                    port=self.__port)
 
 
-class HoneypotPlugin(ordinance.ext.plugin.OrdinancePlugin):
+class HoneypotPlugin(ordinance.plugin.OrdinancePlugin):
     """
     Spawns a honeypot on given ports. Can ban on connect automatically, or just
     send an alert.
@@ -113,7 +121,7 @@ class HoneypotPlugin(ordinance.ext.plugin.OrdinancePlugin):
         self.ban_lock = threading.Lock()
         ordinance.writer.info("Honeypot: Initialized.")
     
-    @ordinance.ext.schedule.run_at_startup()
+    @ordinance.schedule.run_at_startup()
     def setup(self):
         # start socket threads
         for tport in self.tcp_ports:
@@ -124,7 +132,7 @@ class HoneypotPlugin(ordinance.ext.plugin.OrdinancePlugin):
             self.udp_threads[uport].start()
         ordinance.writer.info("Honeypot: Set up.")
     
-    @ordinance.ext.schedule.run_at_shutdown()
+    @ordinance.schedule.run_at_shutdown()
     def close(self):
         ordinance.writer.info("Honeypot: Stopping server threads...")
         for th in self.tcp_threads.values():
@@ -134,21 +142,25 @@ class HoneypotPlugin(ordinance.ext.plugin.OrdinancePlugin):
                 th.server._BaseServer__shutdown_request = True
         for th in self.udp_threads.values():
                 th.server._BaseServer__shutdown_request = True
-        time.sleep(2)  # wait for shutdowns to register (takes at most 2 seconds)
+        time.sleep(2)  # wait for shutdowns to register (takes at most 2 seconds (poll interval is 2 seconds))
+        # send shutdown requests (starts cleanup process)
+        for thread in self.tcp_threads.values():
+            thread.server.shutdown()
+        for thread in self.udp_threads.values():
+            thread.server.shutdown()
         # join threads
-        for port,thread in self.tcp_threads.items():
-            thread.server.shutdown()  # wait for server to join
+        for thread in self.tcp_threads.values():
             thread.join()
-        for port,thread in self.udp_threads.items():
-            thread.server.shutdown()  # wait for server to join
+        for thread in self.udp_threads.values():
             thread.join()
+        # done!
         ordinance.writer.info("Honeypot: Stopped.")
     
     def async_ban(self, ip: str):
         """ Called from ThreadingServer; must be threadsafe. """
         with self.ban_lock:
             ordinance.writer.success(f"Banning ip {ip}...")
-            ordinance.ext.network.blacklist(ip, comment="HONEYPOT")
+            ordinance.network.blacklist.add(ip)
     
     def async_alert(self, ip: str, port: str):
         """ Called from ThreadingServer; must be threadsafe. """
