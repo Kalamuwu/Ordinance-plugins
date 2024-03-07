@@ -1,2 +1,7 @@
-*__pycache__*
-.vscode/
+# python and development stuffs
+**/__pycache__
+**/.vscode
+
+# ordinance stuffs
+**.database
+

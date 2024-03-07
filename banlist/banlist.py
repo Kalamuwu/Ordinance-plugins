@@ -54,7 +54,7 @@ class BanlistPlugin(ordinance.plugin.OrdinancePlugin):
                 return msg
             raise ordinance.exceptions.NetworkException(f"Unknown content type {response.content_type}")
 
-    @ordinance.schedule.run_at_startup()
+    @ordinance.schedule.run_at_plugin_start()
     @ordinance.schedule.run_periodically(days=1)
     def refresh_remotes(self):
         ordinance.writer.info("Banlist: Starting remote ban list refresh...")
@@ -95,8 +95,11 @@ class BanlistPlugin(ordinance.plugin.OrdinancePlugin):
             # compare sets: what isn't in both?
             to_add, to_remove = old_db.diff(new)
             ordinance.writer.debug(f"Banlist: calculated db diff: {len(to_add)} to add, {len(to_remove)} to remove")
-            for ip in to_add:     ordinance.network.blacklist.add(ip)
-            for ip in to_remove:  ordinance.network.blacklist.delete(ip)
+            for ip in to_add:
+                ordinance.network.blacklist.add(ip)
+            for ip in to_remove:
+                try: ordinance.network.blacklist.delete(ip)
+                except KeyError: pass
             # update cache and report
             old_db.update_to(new)
             old_db.flush()
@@ -106,5 +109,5 @@ class BanlistPlugin(ordinance.plugin.OrdinancePlugin):
         ordinance.network.flush_blacklist_to_iptables()
 
 
-def setup(config):
-    return BanlistPlugin(config)
+def setup():
+    return BanlistPlugin

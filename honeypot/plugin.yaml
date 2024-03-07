@@ -11,7 +11,6 @@ description: Spawns a honeypot on given ports. Can ban on connect automatically,
 author: Kalamuwu
 version: 1.0.0
 
-qualified_name: honeypot
 entry_file: honeypot
 
 default_config:

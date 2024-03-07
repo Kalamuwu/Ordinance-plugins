@@ -34,12 +34,12 @@ class FileMonitorPlugin(ordinance.plugin.OrdinancePlugin):
         self.db = ordinance.database.StringDatabase(db_path)
         ordinance.writer.info("FileMonitor: Initialized.")
 
-    @ordinance.schedule.run_at_startup()
+    @ordinance.schedule.run_at_plugin_start()
     def set_freq(self):
         sched = ordinance.schedule.get_coro(self.scan)
         sched.set_time_between( datetime.timedelta(minutes=self.freq) )
     
-    @ordinance.schedule.run_at_startup()
+    @ordinance.schedule.run_at_plugin_start()
     def check_given_paths(self):
         def __inner(folder: Set[str]) -> Set[str]:
             out = set()
@@ -113,6 +113,6 @@ class FileMonitorPlugin(ordinance.plugin.OrdinancePlugin):
         ordinance.writer.success(f"FileMonitor: Finished scan.")
 
 
-def setup(config):
-    return FileMonitorPlugin(config)
+def setup():
+    return FileMonitorPlugin
 

@@ -121,7 +121,7 @@ class HoneypotPlugin(ordinance.plugin.OrdinancePlugin):
         self.ban_lock = threading.Lock()
         ordinance.writer.info("Honeypot: Initialized.")
     
-    @ordinance.schedule.run_at_startup()
+    @ordinance.schedule.run_at_plugin_start()
     def setup(self):
         # start socket threads
         for tport in self.tcp_ports:
@@ -132,7 +132,7 @@ class HoneypotPlugin(ordinance.plugin.OrdinancePlugin):
             self.udp_threads[uport].start()
         ordinance.writer.info("Honeypot: Set up.")
     
-    @ordinance.schedule.run_at_shutdown()
+    @ordinance.schedule.run_at_plugin_stop()
     def close(self):
         ordinance.writer.info("Honeypot: Stopping server threads...")
         for th in self.tcp_threads.values():
@@ -171,5 +171,5 @@ class HoneypotPlugin(ordinance.plugin.OrdinancePlugin):
             .replace("%port%", port))
 
 
-def setup(config):
-    return HoneypotPlugin(config)
+def setup():
+    return HoneypotPlugin

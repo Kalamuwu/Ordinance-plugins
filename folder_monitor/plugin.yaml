@@ -10,7 +10,6 @@ description: Monitors filesystem for changes and sends an alert if changes are d
 author: Kalamuwu
 version: 1.0.0
 
-qualified_name: folder_monitor
 entry_file: monitor
 
 default_config:

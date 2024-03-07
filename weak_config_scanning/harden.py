@@ -18,12 +18,12 @@ class SysHardenerPlugin(ordinance.plugin.OrdinancePlugin):
         self.scans = None
         ordinance.writer.info("SysHardener: Initialized.")
     
-    @ordinance.schedule.run_at_startup()
+    @ordinance.schedule.run_at_plugin_start()
     def set_scan_rate(self):
         sched = ordinance.schedule.get_coro(self.scan_configs)
         sched.set_time_between( datetime.timedelta(days=self.scan_days) )
     
-    @ordinance.schedule.run_at_startup()
+    @ordinance.schedule.run_at_plugin_start()
     def read_scans(self):
         if not os.path.isfile(self.configscans):
             with open(self.configscans, 'w') as file:
@@ -35,6 +35,7 @@ class SysHardenerPlugin(ordinance.plugin.OrdinancePlugin):
             ordinance.writer.error("SysHardener: Could not load scans db")
             with open(self.configscans, 'w') as file:
                 file.write("{}")
+            self.scans = {}
         sched = ordinance.schedule.get_coro(self.scan_configs)
         sched.run()
     
@@ -42,6 +43,7 @@ class SysHardenerPlugin(ordinance.plugin.OrdinancePlugin):
     def scan_configs(self):
         ordinance.writer.info("SysHardener: Starting system config scan...")
         num_issues = 0
+        if self.scans is None: return  # too early, this isn't initialized yet
         for (file,patterns) in self.scans.items():
             if not os.path.isfile(file): continue
             ordinance.writer.debug(f"SysHardener: Scanning file {file}")
@@ -57,5 +59,5 @@ class SysHardenerPlugin(ordinance.plugin.OrdinancePlugin):
             ordinance.writer.success("SysHardener: Scan complete. No issues identified.")
 
 
-def setup(config):
-    return SysHardenerPlugin(config)
+def setup():
+    return SysHardenerPlugin

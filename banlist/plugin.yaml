@@ -10,7 +10,6 @@ description: Updates and maintains foreign list(s) of known bad addresses.
 author: Kalamuwu
 version: 1.0.0
 
-qualified_name: banlist
 entry_file: banlist
 
 default_config:
