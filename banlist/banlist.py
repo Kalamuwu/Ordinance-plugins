@@ -75,6 +75,7 @@ class BanlistPlugin(ordinance.plugin.OrdinancePlugin):
         for src,db in self.remote_cache.items():
             db.read()
         # compare with old
+        did_something_change = False
         for i,remote in enumerate(self.remote_srcs):
             old_db = self.remote_cache[remote]
             new_list = results[i]
@@ -87,7 +88,7 @@ class BanlistPlugin(ordinance.plugin.OrdinancePlugin):
             for line in new_list.split('\n'):
                 if '#' in line: line,_ = line.split('#', maxsplit=1)
                 line = line.strip()
-                if line == '': continue
+                if not line: continue
                 if line.startswith('ALL:'): # probably hosts.deny format
                     line = line.split()[1]
                 if ordinance.network.is_valid_ipv4(line):
@@ -95,18 +96,26 @@ class BanlistPlugin(ordinance.plugin.OrdinancePlugin):
             # compare sets: what isn't in both?
             to_add, to_remove = old_db.diff(new)
             ordinance.writer.debug(f"Banlist: calculated db diff: {len(to_add)} to add, {len(to_remove)} to remove")
-            for ip in to_add:
-                ordinance.network.blacklist.add(ip)
-            for ip in to_remove:
-                try: ordinance.network.blacklist.delete(ip)
-                except KeyError: pass
+            if len(to_add):
+                did_something_change = True
+                for ip in to_add:
+                    ordinance.network.blacklist.add(ip)
+            if len(to_remove):
+                did_something_change = True
+                for ip in to_remove:
+                    try: ordinance.network.blacklist.delete(ip)
+                    except KeyError: pass
             # update cache and report
             old_db.update_to(new)
             old_db.flush()
-            ordinance.writer.success(f"Banlist: Updated remote banlist '{remote}': " +
+            ordinance.writer.info(f"Banlist: Updated remote banlist '{remote}': " +
                                      f"{len(to_add)} added, {len(to_remove)} removed")
         # save updated blacklist
-        ordinance.network.flush_blacklist_to_iptables()
+        if did_something_change:
+            ordinance.network.flush_blacklist_to_iptables()
+            ordinance.writer.success(f"Banlist: Updated blacklist.")
+        else:
+            ordinance.writer.info(f"Banlist: Nothing to change.")
 
 
 def setup():

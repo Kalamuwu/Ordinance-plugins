@@ -4,4 +4,7 @@
 
 # ordinance stuffs
 **.database
+logs/**
+storage/**
+pidfile
 

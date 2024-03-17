@@ -36,8 +36,8 @@ class FileMonitorPlugin(ordinance.plugin.OrdinancePlugin):
 
     @ordinance.schedule.run_at_plugin_start()
     def set_freq(self):
-        sched = ordinance.schedule.get_coro(self.scan)
-        sched.set_time_between( datetime.timedelta(minutes=self.freq) )
+        self.scan.add_periodic_trigger( datetime.timedelta(minutes=self.freq) )
+        ordinance.writer.debug(f"FileMonitor: Set scan frequency to {self.freq} minutes.")
     
     @ordinance.schedule.run_at_plugin_start()
     def check_given_paths(self):
@@ -74,7 +74,7 @@ class FileMonitorPlugin(ordinance.plugin.OrdinancePlugin):
                     hashes[fullpath] = hash_file(fullpath)
         return hashes
 
-    @ordinance.schedule.run_periodically(seconds=600)
+    @ordinance.schedule.blank_schedule()
     def scan(self):
         ordinance.writer.info("FileMonitor: Starting filsystem scan...")
         new_hashes = self.hash_all()
@@ -88,25 +88,33 @@ class FileMonitorPlugin(ordinance.plugin.OrdinancePlugin):
             # set operations to get added and deleted files
             new_files = new_hashes_keys - old_hashes_keys
             del_files = old_hashes_keys - new_hashes_keys
-            for key in new_files:  out += f"  File added:   {key}\n"
-            for key in del_files:  out += f"  File deleted:   {key}\n"
-            # alert num add/del
+            # alert add/del
             n_new = len(new_files)
             n_del = len(del_files)
-            if n_new and n_del:  ordinance.writer.alert(f"{n_new} new files and {n_del} files deleted since last scan")
-            elif n_new:          ordinance.writer.alert(f"{n_new} new files since last scan")
-            elif n_del:          ordinance.writer.alert(f"{n_del} files deleted since last scan")
+            if n_new:
+                out += f"ADDITIONS: {n_new}\n"
+                for key in new_files:
+                    out += f"  {key}\n"
+            if n_del:
+                out += f"DELETIONS: {n_del}\n"
+                for key in del_files:
+                    out += f"  {key}\n"
             # diff files that aren't new or deleted
             union = new_hashes_keys & old_hashes_keys
+            out_changes = ""
             for file in union:
                 new_hash = new_hashes.get(file)
                 old_hash = self.db.get(file)
                 if new_hash == old_hash: continue
-                out += f"  File changed:   {file}\n"
-            if out: ordinance.writer.warn(f"FileMonitor: Aggregated changes:\n{out}")
+                ordinance.writer.warn(f"File '{file}' changed since last scan")
+                out += f"  {file}\n"
+            if out_changes:
+              out += "CHANGES: \n" + out_changes
+            if out: ordinance.writer.alert(f"FileMonitor: Aggregated changes:\n{out}")
             else:   ordinance.writer.info(f"FileMonitor: No changes detected.")
         else: ordinance.writer.warn(f"FileMonitor: Integrity database was empty! Skipped hash checking.")
         # update with new hashes
+        ordinance.writer.debug(f"FileMonitor: {len(new_hashes)} hashes.")
         self.db.clear()
         for k,v in new_hashes.items(): self.db.set(k, v)
         self.db.flush()
